@@ -7,7 +7,12 @@ import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -15,17 +20,31 @@ class MainActivity : ComponentActivity() {
     @OptIn(DelicateCoroutinesApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-       val job = GlobalScope.launch {
+     GlobalScope.launch {
             val data: Flow<Int> = producer()
-            data.collect{
+            data
+                .onStart {
+                    emit(-1)
+                    Log.d(TAG, "Starting out")
+                }
+                .onCompletion {
+                    emit(11)
+                    Log.d(TAG, "Completed")
+                }
+                .onEach {
+                    Log.d(TAG, "About to emit $it")
+                }
+                .map {
+                    it * 2
+                }
+                .filter {
+                    it % 3 == 0
+                }
+                .collect{
                 Log.d(TAG, it.toString())
             }
         }
 
-        GlobalScope.launch {
-            delay(3500)
-            job.cancel()
-        }
     }
 
     private fun producer() = flow{
